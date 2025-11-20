@@ -59,18 +59,18 @@ class AuthControllerTest extends TestCase
 
 
         //assert
-                $response->assertStatus(201)->assertJsonStructure(['message','user']);
+        $response->assertStatus(201)->assertJsonStructure(['message','user']);
     }
 
-    #[Test]
-    public function user_can_logout(){
-        //arrange
+    // #[Test]
+    // public function user_can_logout(){
+    //     //arrange
 
 
-        //act
+    //     //act
 
 
-        //assert
+    //     //assert
         
-    }
+    // }
 }
