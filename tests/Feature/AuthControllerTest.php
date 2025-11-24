@@ -59,18 +59,20 @@ class AuthControllerTest extends TestCase
 
 
         //assert
-        $response->assertStatus(201)->assertJsonStructure(['message','user']);
+        $response->assertStatus(200)->assertJsonStructure(['access_token','token_type']);
     }
 
-    // #[Test]
-    // public function user_can_logout(){
-    //     //arrange
+    #[Test]
+    public function user_can_logout(){
+        //arrange
+            $user = User::factory()->create();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+        //act
+            $response = $this->withHeader('Authorization', 'Bearer '.$token)->postJson('/api/logout');
 
 
-    //     //act
-
-
-    //     //assert
-        
-    // }
+        //assert
+        $response->assertStatus(200)->assertJson(['message'=>'Successfully logged out']);
+    }
 }
