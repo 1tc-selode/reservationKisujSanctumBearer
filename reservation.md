@@ -2,11 +2,11 @@
 
 Alap URL (base URL):
 
-http://localhost/reservationKisujSanctumBearer/api
+`http://localhost/reservationKisujSanctumBearer/api`
 
 Az összes lentebbi végpont ehhez képest értendő, tehát pl. a login teljes URL-je:
 
-http://localhost/reservationKisujSanctumBearer/api/login
+`http://localhost/reservationKisujSanctumBearer/api/login`
 
 A Laravel-ben az útvonalak (részlet):
 
@@ -24,20 +24,22 @@ Route::middleware('auth:sanctum')->patch('/reservations/{id}',[ReservationContro
 Route::middleware('auth:sanctum')->delete('/reservations/{id}',[ReservationController::class, 'destroy']); 
 ```
 
+---
+
 ## 1. Regisztráció – `POST /register` (nyilvános)
 
 Új felhasználó létrehozása (sima user, nem admin).
 
-Teljes URL:
+**Teljes URL:**
 
 `POST http://localhost/reservationKisujSanctumBearer/api/register`
 
-Headers (Postman):
+**Headers (Postman):**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 
-Body (raw JSON):
+**Body (raw JSON):**
 
 ```json
 {
@@ -47,7 +49,7 @@ Body (raw JSON):
 }
 ```
 
-Válasz – siker esetén (példa):
+### Sikeres válasz
 
 - HTTP státuszkód: `201 Created`
 
@@ -63,21 +65,57 @@ Válasz – siker esetén (példa):
 }
 ```
 
+### Sikertelen válaszok
+
+1. **Hiányzó vagy rossz adatok (validációs hiba)**  
+   - Pl. üres név, érvénytelen email, túl rövid jelszó.
+   - HTTP státuszkód: `422 Unprocessable Entity`
+   - Válasz (példa):
+
+   ```json
+   {
+     "message": "The given data was invalid.",
+     "errors": {
+       "email": [
+         "The email field must be a valid email address."
+       ]
+     }
+   }
+   ```
+
+2. **Már létező email (unique hiba)**  
+   - Ha az email már foglalt a `users` táblában.
+   - HTTP státuszkód: `422 Unprocessable Entity`
+   - Válasz (példa):
+
+   ```json
+   {
+     "message": "The given data was invalid.",
+     "errors": {
+       "email": [
+         "The email has already been taken."
+       ]
+     }
+   }
+   ```
+
+---
+
 ## 2. Bejelentkezés – `POST /login` (nyilvános)
 
 Belépés email + jelszóval, és egy Bearer token visszaadása.  
 Ezt a tokent kell majd az összes védett végpontnál beküldeni.
 
-Teljes URL:
+**Teljes URL:**
 
 `POST http://localhost/reservationKisujSanctumBearer/api/login`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 
-Body (raw JSON):
+**Body (raw JSON):**
 
 ```json
 {
@@ -86,7 +124,7 @@ Body (raw JSON):
 }
 ```
 
-Válasz – siker esetén (példa):
+### Sikeres válasz
 
 - HTTP státuszkód: `200 OK`
 
@@ -97,27 +135,58 @@ Válasz – siker esetén (példa):
 }
 ```
 
-A kapott access_token-t a további kérésekben így kell használni:
+A kapott `access_token`-t a további kérésekben így kell használni:
 
 Authorization header:
 
 `Authorization: Bearer 1|valami_hosszu_sanctum_token...`
 
+### Sikertelen válaszok
+
+1. **Hiányzó/érvénytelen adatok (validáció)**  
+   - Pl. hiányzik az email vagy a password.
+   - HTTP státuszkód: `422 Unprocessable Entity`
+   - Válasz (példa):
+
+   ```json
+   {
+     "message": "The given data was invalid.",
+     "errors": {
+       "email": [
+         "The email field is required."
+       ]
+     }
+   }
+   ```
+
+2. **Hibás email vagy jelszó**  
+   - Ha nincs ilyen user, vagy a jelszó nem stimmel.
+   - HTTP státuszkód: `401 Unauthorized`
+   - Válasz:
+
+   ```json
+   {
+     "message": "Invalid credentials"
+   }
+   ```
+
+---
+
 ## 3. Kijelentkezés – `POST /logout` (auth:sanctum)
 
 Minden ehhez a felhasználóhoz tartozó token törlése (kijelentkezés).
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->post('/logout',[AuthController::class,'logout']);
 ```
 
-Teljes URL:
+**Teljes URL:**
 
 `POST http://localhost/reservationKisujSanctumBearer/api/logout`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
@@ -127,11 +196,11 @@ Példa:
 
 `Authorization: Bearer 1|valami_hosszu_sanctum_token...`
 
-Body:
+**Body:**
 
 - Nem szükséges (üresen maradhat).
 
-Válasz – siker esetén:
+### Sikeres válasz
 
 - HTTP státuszkód: `200 OK`
 
@@ -143,32 +212,47 @@ Válasz – siker esetén:
 
 Utána ezzel a tokennel már nem lehet hívni a védett végpontokat → `401 Unauthorized`.
 
+### Sikertelen válaszok
+
+1. **Hiányzó vagy hibás token**  
+   - Ha nincs `Authorization` header, vagy a token lejárt/érvénytelen.
+   - HTTP státuszkód: `401 Unauthorized`
+   - Válasz (tipikus Sanctum üzenet):
+
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+---
+
 ## 4. Összes foglalás lekérdezése – `GET /reservations` (auth:sanctum)
 
 - Admin: látja az összes foglalást.  
 - Normál user: csak a saját foglalásait látja.
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->get('/reservations',[ReservationController::class, 'index']);
 ```
 
-Teljes URL:
+**Teljes URL:**
 
 `GET http://localhost/reservationKisujSanctumBearer/api/reservations`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body:
+**Body:**
 
 - Nincs (GET kérés).
 
-Válasz – siker esetén (példa adminnál):
+### Sikeres válasz (példa adminnál)
 
 ```json
 [
@@ -189,34 +273,47 @@ Válasz – siker esetén (példa adminnál):
 ]
 ```
 
-Sima usernél csak a saját foglalásai jelennek meg.
+Normál usernél csak a saját foglalásai jelennek meg.
+
+### Sikertelen válaszok
+
+1. **Hiányzó/hibás token**  
+   - HTTP státuszkód: `401 Unauthorized`
+
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+---
 
 ## 5. Egy konkrét foglalás lekérdezése – `GET /reservations/{id}` (auth:sanctum)
 
 - Admin: tetszőleges foglalást lekérdezhet.  
 - Normál user: csak a saját foglalását érheti el → ha nem az övé, `403 Unauthorized`.
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->get('/reservations/{id}',[ReservationController::class, 'show']);
 ```
 
-Teljes URL példa:
+**Teljes URL példa:**
 
 `GET http://localhost/reservationKisujSanctumBearer/api/reservations/1`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body:
+**Body:**
 
 - Nincs.
 
-Válasz – siker esetén (példa):
+### Sikeres válasz (példa)
 
 ```json
 {
@@ -228,38 +325,61 @@ Válasz – siker esetén (példa):
 }
 ```
 
-Ha nem a saját foglalás, és a user nem admin:
+### Sikertelen válaszok
 
-- HTTP státuszkód: `403 Forbidden`
+1. **Hiányzó/hibás token**  
+   - `401 Unauthorized` + 
 
-```json
-{
-  "message": "Unauthorized"
-}
-```
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+2. **Nem létező foglalás**  
+   - `Reservation::findOrFail($id)` → ha nincs ilyen id:
+   - HTTP státuszkód: `404 Not Found`
+   - Válasz (tipikus):
+
+   ```json
+   {
+     "message": "No query results for model [App\Models\Reservation] 99"
+   }
+   ```
+
+3. **Más foglalását próbálja elérni nem adminként**  
+   - HTTP státuszkód: `403 Forbidden`
+
+   ```json
+   {
+     "message": "Unauthorized"
+   }
+   ```
+
+---
 
 ## 6. Új foglalás létrehozása – `POST /reservations` (auth:sanctum)
 
 Új foglalás rögzítése a bejelentkezett user nevében.  
-user_id-t nem a kliens küldi, hanem a backend tölti ki a bejelentkezett user alapján.
+`user_id`-t nem a kliens küldi, hanem a backend tölti ki a bejelentkezett user alapján.
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->post('/reservations',[ReservationController::class, 'store']);
 ```
 
-Teljes URL:
+**Teljes URL:**
 
 `POST http://localhost/reservationKisujSanctumBearer/api/reservations`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body (raw JSON):
+**Body (raw JSON):**
 
 ```json
 {
@@ -280,7 +400,7 @@ $reservation = Reservation::create([
 ]);
 ```
 
-Válasz – siker esetén:
+### Sikeres válasz
 
 - HTTP státuszkód: `201 Created`
 
@@ -296,28 +416,57 @@ Válasz – siker esetén:
 }
 ```
 
+### Sikertelen válaszok
+
+1. **Hiányzó/hibás token**  
+   - `401 Unauthorized` + 
+
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+2. **Hiányzó vagy rossz adatok (validáció)**  
+   - Pl. nincs `reservation_time`, vagy `guests` nem szám, vagy `< 1`.
+   - HTTP státuszkód: `422 Unprocessable Entity`
+   - Válasz (példa):
+
+   ```json
+   {
+     "message": "The given data was invalid.",
+     "errors": {
+       "reservation_time": [
+         "The reservation time field is required."
+       ]
+     }
+   }
+   ```
+
+---
+
 ## 7. Foglalás teljes módosítása – `PUT /reservations/{id}` (auth:sanctum)
 
-Foglalás összes mezőjének módosítása (kivéve user_id).  
+Foglalás összes mezőjének módosítása (kivéve `user_id`).  
 Csak az módosíthatja, akinek a foglalása, vagy az admin.
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->put('/reservations/{id}',[ReservationController::class, 'update']);
 ```
 
-Teljes URL példa:
+**Teljes URL példa:**
 
 `PUT http://localhost/reservationKisujSanctumBearer/api/reservations/5`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body (raw JSON – minden mező):
+**Body (raw JSON – minden mező):**
 
 ```json
 {
@@ -327,7 +476,7 @@ Body (raw JSON – minden mező):
 }
 ```
 
-Válasz – siker esetén:
+### Sikeres válasz
 
 - HTTP státuszkód: `200 OK`
 
@@ -343,37 +492,56 @@ Válasz – siker esetén:
 }
 ```
 
-Ha más foglalását akarja módosítani nem adminként:
+### Sikertelen válaszok
 
-- HTTP státuszkód: `403 Forbidden`
+1. **Hiányzó/hibás token**  
+   - `401 Unauthorized` + 
 
-```json
-{
-  "message": "Unauthorized"
-}
-```
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+2. **Nem létező foglalás**  
+   - `404 Not Found` + tipikus `findOrFail` üzenet.
+
+3. **Más foglalását akarja módosítani nem adminként**  
+   - `403 Forbidden` + 
+
+   ```json
+   {
+     "message": "Unauthorized"
+   }
+   ```
+
+4. **Hibás adatok (validáció)**  
+   - Pl. `guests` negatív vagy 0.
+   - `422 Unprocessable Entity` + error mezők.
+
+---
 
 ## 8. Foglalás részleges módosítása – `PATCH /reservations/{id}` (auth:sanctum)
 
-Csak néhány mező módosítása (pl. csak guests, vagy csak note).
+Csak néhány mező módosítása (pl. csak `guests`, vagy csak `note`).
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->patch('/reservations/{id}',[ReservationController::class, 'update']);
 ```
 
-Teljes URL példa:
+**Teljes URL példa:**
 
 `PATCH http://localhost/reservationKisujSanctumBearer/api/reservations/5`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body (raw JSON – csak a módosítandó mezők):
+**Body (raw JSON – csak a módosítandó mezők):**
 
 Példa 1 – csak vendégek száma:
 
@@ -393,36 +561,54 @@ Példa 2 – csak megjegyzés:
 
 A validáció `sometimes|required`, ezért csak azokat kéri számon, amiket elküldünk.
 
-Válasz – siker esetén:
+### Sikeres válasz
 
 - HTTP státuszkód: `200 OK`
 - A frissített foglalás JSON-ben.
+
+### Sikertelen válaszok
+
+1. **Hiányzó/hibás token** → `401 Unauthorized`
+
+2. **Nem létező foglalás** → `404 Not Found`
+
+3. **Más foglalását akarja módosítani** → `403 Forbidden` + 
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+4. **Hibás input** (pl. `guests` nem szám) → `422 Unprocessable Entity` + error mezők.
+
+---
 
 ## 9. Foglalás törlése – `DELETE /reservations/{id}` (auth:sanctum)
 
 Egy foglalás teljes törlése az adatbázisból.
 
-Laravel route:
+**Laravel route:**
 
 ```php
 Route::middleware('auth:sanctum')->delete('/reservations/{id}',[ReservationController::class, 'destroy']);
 ```
 
-Teljes URL példa:
+**Teljes URL példa:**
 
 `DELETE http://localhost/reservationKisujSanctumBearer/api/reservations/5`
 
-Headers:
+**Headers:**
 
 - `Content-Type: application/json`
 - `Accept: application/json`
 - `Authorization: Bearer <TOKEN>`
 
-Body:
+**Body:**
 
 - Nem kell body.
 
-Válasz – siker esetén:
+### Sikeres válasz
 
 - HTTP státuszkód: `200 OK`
 
@@ -432,12 +618,25 @@ Válasz – siker esetén:
 }
 ```
 
-Ha nem a saját foglalás és a user nem admin:
+### Sikertelen válaszok
 
-- HTTP státuszkód: `403 Forbidden`
+1. **Hiányzó/hibás token**  
+   - `401 Unauthorized` + 
 
-```json
-{
-  "message": "Unauthorized"
-}
-```
+   ```json
+   {
+     "message": "Unauthenticated."
+   }
+   ```
+
+2. **Nem létező foglalás**  
+   - `404 Not Found` (findOrFail esetén).
+
+3. **Más foglalását akarja törölni nem adminként**  
+   - `403 Forbidden`
+
+   ```json
+   {
+     "message": "Unauthorized"
+   }
+   ```
